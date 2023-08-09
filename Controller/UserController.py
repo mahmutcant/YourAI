@@ -2,6 +2,8 @@ from flask import jsonify, request, redirect
 from app import app, db
 from Model.User import User
 from Model.SavedModel import SavedModel
+import jwt
+import datetime 
 
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -29,6 +31,8 @@ def login():
         return jsonify({"message": "Kullanıcı adı ve şifre gereklidir"}), 400
     user = User.query.filter_by(username = username).first()
     if user and user.password == password:
-        return jsonify({'message' : 'Giriş Başarılı'}), 200
+        expiration = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        token = jwt.encode({'user_id': user.id, 'exp': expiration}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token':token,"userId":user.id})
     else:
         return jsonify({'message':'Hatalı kullanıcı adı veya şifre'}), 401
