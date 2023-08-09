@@ -20,3 +20,15 @@ def addUser():
     db.session.add(yeni_kullanici)
     db.session.commit()
     return jsonify({'message':'Kayıt başarıyla oluşturuldu'}), 200
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return jsonify({"message": "Kullanıcı adı ve şifre gereklidir"}), 400
+    user = User.query.filter_by(username = username).first()
+    if user and user.password == password:
+        return jsonify({'message' : 'Giriş Başarılı'}), 200
+    else:
+        return jsonify({'message':'Hatalı kullanıcı adı veya şifre'}), 401
