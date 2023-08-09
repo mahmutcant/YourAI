@@ -33,6 +33,6 @@ def login():
     if user and user.password == password:
         expiration = datetime.datetime.utcnow() + datetime.timedelta(days=1)
         token = jwt.encode({'user_id': user.id, 'exp': expiration}, app.config['SECRET_KEY'], algorithm='HS256')
-        return jsonify({'token':token,"userId":user.id})
+        return jsonify({'token':token})
     else:
         return jsonify({'message':'Hatalı kullanıcı adı veya şifre'}), 401
