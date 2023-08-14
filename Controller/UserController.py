@@ -10,6 +10,16 @@ import datetime
 def get_users():
     users = User.query.all()
     return jsonify(users=[user.serialize() for user in users])
+@app.route('/protected', methods=['GET'])
+def protected_route():
+    token = request.headers.get('Authorization').split()[1]
+    try:
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        return jsonify({'message': f'Hello, {payload["user_id"]}! This is a protected route.'})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'message': 'Token has expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'message': 'Invalid token'}), 401
 
 @app.route('/register', methods=['POST'])
 def addUser():
