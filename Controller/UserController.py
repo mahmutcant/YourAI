@@ -61,6 +61,6 @@ def getUserInfo():
     payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
     user = User.query.get(payload['user_id'])
     if user:
-        return jsonify({'user_id' : user.id, 'username':user.name, 'password':user.password, 'email': user.email})
+        return jsonify({'id' : user.id, 'username':user.username, 'password':user.password,'name':user.name,'surname':user.surname, 'email': user.email})
     return jsonify({'error' : 'User not found'}), 404
         
