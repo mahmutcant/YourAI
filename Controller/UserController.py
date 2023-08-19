@@ -24,10 +24,12 @@ def protected_route():
 @app.route('/register', methods=['POST'])
 def addUser():
     data = request.get_json()
+    name = data.get('name')
+    surname = data.get('surname')
     username = data.get('username')
     password = data.get('password')
     email = data.get('email')
-    yeni_kullanici = User(username=username,password=password,email=email)
+    yeni_kullanici = User(name = name,surname = surname,username=username,password=password,email=email)
     try:
         db.session.add(yeni_kullanici)
         db.session.commit()
@@ -52,3 +54,13 @@ def login():
         return jsonify({'token':token})
     else:
         return jsonify({'message':'Hatalı kullanıcı adı veya şifre'}), 401
+    
+@app.route('/getuserinfo', methods=['GET'])
+def getUserInfo():
+    token = request.headers.get('Authorization').split()[1]
+    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user = User.query.get(payload['user_id'])
+    if user:
+        return jsonify({'user_id' : user.id, 'username':user.name, 'password':user.password, 'email': user.email})
+    return jsonify({'error' : 'User not found'}), 404
+        
