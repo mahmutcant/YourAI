@@ -64,3 +64,26 @@ def getUserInfo():
         return jsonify({'id' : user.id, 'username':user.username, 'password':user.password,'name':user.name,'surname':user.surname, 'email': user.email})
     return jsonify({'error' : 'User not found'}), 404
         
+@app.route('/changeuserinfo', methods=["PUT"])
+def changeUserInfo():
+    token = request.headers.get('Authorization').split()[1]
+    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user = User.query.get(payload['user_id'])
+    data = request.get_json()
+    path = "C:/Users/mahca/OneDrive/Masaüstü/BitirmeProjesi/Users/" + user.username
+    if user:
+        try:
+            eski_klasor_yolu = path
+            yeni_klasor_yolu = os.path.join(os.path.dirname(path), data.get('username'))
+            os.rename(eski_klasor_yolu, yeni_klasor_yolu)
+
+            user.name = data.get('name')
+            user.surname = data.get('surname')
+            user.username = data.get('username')
+            user.email = data.get('email')
+            db.session.commit()
+
+            return jsonify({'message':'Kullanıcı bilgileri güncellendi'}), 200
+        except:
+            db.session.rollback()
+            return jsonify({'error': "Hata"}), 400
