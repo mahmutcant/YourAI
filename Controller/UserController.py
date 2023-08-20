@@ -63,7 +63,20 @@ def getUserInfo():
     if user:
         return jsonify({'id' : user.id, 'username':user.username, 'password':user.password,'name':user.name,'surname':user.surname, 'email': user.email})
     return jsonify({'error' : 'User not found'}), 404
-        
+@app.route('/changepassword', methods=["PUT"])
+def changeUserPassword():
+    token = request.headers.get('Authorization').split()[1]
+    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user = User.query.get(payload['user_id'])
+    data = request.get_json()
+    if user:
+        try:
+            user.password = data.get('newPassword')
+            db.session.commit()
+            return jsonify({"message":"Basarili"}), 200
+        except:
+            db.session.rollback()
+            return jsonify({'error': "Hata"}), 400
 @app.route('/changeuserinfo', methods=["PUT"])
 def changeUserInfo():
     token = request.headers.get('Authorization').split()[1]
