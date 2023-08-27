@@ -1,4 +1,5 @@
 from flask import jsonify, request, redirect,render_template
+import jwt
 from app import app, db
 import os
 from Model.User import User
@@ -37,21 +38,29 @@ def neuralNetwork(dataset, sinif, ara_katman=25, tekrar_sayisi=20):
 def get_models():
     models = SavedModel.query.all()
     return jsonify(models=[model.serialize() for model in models])
-@app.route('/upload', methods=['POST'])
-def upload_csv():
-    if request.method == 'POST':
-        user_folder = request.form.get('user_folder')
-        csv_file = request.files['csv_file']
-        if user_folder and csv_file:
-            user_upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], user_folder)
-            if not os.path.exists(user_upload_folder):
-                os.makedirs(user_upload_folder)
-            file_path = os.path.join(user_upload_folder, csv_file.filename)
-            csv_file.save(file_path)
-            return jsonify({'message':'Ok'}), 200
-    return jsonify({'Message':'Error'}), 500
 
-
+def is_numeric(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 @app.route('/trainModel', methods=['POST'])
-def train(dataFrame):
-    pass
+def train():
+    data = request.get_json()
+    dataset = data.get('csvData')
+    epochNumber = data.get('epochNumber')
+    selectedClass = data.get('selectedClass')
+    token = request.headers.get('Authorization').split()[1]
+    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user = User.query.get(payload['user_id'])
+    dataset.pop('0',None)
+    parsed_dataset = {
+    key: [float(value) for value in values if is_numeric(value)]
+    for key, values in dataset.items()
+    }
+    filtered_dataset = {key: values for key, values in parsed_dataset.items()}
+    print(filtered_dataset)
+    if user:
+        return jsonify({"message":dataset}), 200
+    return 401

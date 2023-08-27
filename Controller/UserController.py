@@ -71,9 +71,11 @@ def changeUserPassword():
     data = request.get_json()
     if user:
         try:
-            user.password = data.get('newPassword')
-            db.session.commit()
-            return jsonify({"message":"Basarili"}), 200
+            if(data.get('password') == user.password):
+                user.password = data.get('newPassword')
+                db.session.commit()
+                return jsonify({"message":"Basarili"}), 200
+            return 401
         except:
             db.session.rollback()
             return jsonify({'error': "Hata"}), 400
