@@ -11,8 +11,12 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier
 
-def neuralNetwork(dataset, sinif, ara_katman=25, tekrar_sayisi=20):
+def Perceptron(dataset, sinif, ara_katman=25, tekrar_sayisi=20):
     label_encoder = LabelEncoder().fit(dataset[sinif])
     labels = label_encoder.transform(dataset[sinif])
     classes = list(label_encoder.classes_)
@@ -34,6 +38,24 @@ def neuralNetwork(dataset, sinif, ara_katman=25, tekrar_sayisi=20):
     model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
     model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=tekrar_sayisi)
     return max(model.history.history["accuracy"])
+def knn(dataset, target, k=8):
+    X = dataset.drop([target], axis=1)
+    Y = dataset[target]
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=15)
+    model = KNeighborsClassifier(n_neighbors=k)
+    model.fit(X_train, Y_train)
+    Y_pred = model.predict(X_test)
+    accuracy = accuracy_score(Y_test, Y_pred)
+    return accuracy
+def decisionTree(dataset, target):
+    X = dataset.drop([target], axis=1)
+    Y = dataset[target]
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=15)
+    model = DecisionTreeClassifier()
+    model.fit(X_train, Y_train)
+    Y_pred = model.predict(X_test)
+    accuracy = accuracy_score(Y_test, Y_pred)
+    return accuracy 
 @app.route('/models', methods=['GET'])
 def get_models():
     models = SavedModel.query.all()
@@ -50,6 +72,7 @@ def train():
     data = request.get_json()
     dataset = data.get('csvData')
     epochNumber = data.get('epochNumber')
+    algorithm = data.get('algorithm')
     selectedClass = data.get('selectedClass')
     token = request.headers.get('Authorization').split()[1]
     payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
@@ -60,7 +83,6 @@ def train():
     for key, values in dataset.items()
     }
     filtered_dataset = {key: values for key, values in parsed_dataset.items()}
-    print(filtered_dataset)
     if user:
         return jsonify({"message":dataset}), 200
     return 401
