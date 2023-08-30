@@ -16,13 +16,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 
-def Perceptron(dataset, sinif, ara_katman=25, tekrar_sayisi=20):
-    label_encoder = LabelEncoder().fit(dataset[sinif])
-    labels = label_encoder.transform(dataset[sinif])
+def neuralNetwork(dataset, selectedClass, interlayers, epochNumber):
+    label_encoder = LabelEncoder().fit(dataset[selectedClass])
+    labels = label_encoder.transform(dataset[selectedClass])
     classes = list(label_encoder.classes_)
-    class_len = len(dataset[sinif].unique())
+    class_len = len(dataset[selectedClass].unique())
     count_col = len(dataset.columns) - 1 
-    X = dataset.drop([sinif], axis=1)
+    X = dataset.drop([selectedClass], axis=1)
     Y = labels
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
     Y_train = to_categorical(Y_train, num_classes=class_len)
@@ -30,13 +30,13 @@ def Perceptron(dataset, sinif, ara_katman=25, tekrar_sayisi=20):
     model = Sequential()
     model.add(Dense(16, input_dim=count_col, activation="relu"))
     model.add(Dropout(0.6))
-    for i in range(ara_katman):
+    for i in range(interlayers):
         model.add(Dense(32, activation="relu"))
     model.add(Dropout(0.6))
     model.add(Dense(class_len, activation="softmax"))
     model.summary()
     model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-    model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=tekrar_sayisi)
+    model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=epochNumber)
     return max(model.history.history["accuracy"])
 def knn(dataset, target, k=8):
     X = dataset.drop([target], axis=1)
@@ -74,6 +74,7 @@ def train():
     epochNumber = data.get('epochNumber')
     algorithm = data.get('algorithm')
     selectedClass = data.get('selectedClass')
+    interlayers = data.get('interlayers')
     token = request.headers.get('Authorization').split()[1]
     payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
     user = User.query.get(payload['user_id'])
@@ -84,5 +85,13 @@ def train():
     }
     filtered_dataset = {key: values for key, values in parsed_dataset.items()}
     if user:
-        return jsonify({"message":dataset}), 200
+        match algorithm:
+            case "Perceptron":
+                neuralNetwork(filtered_dataset,selectedClass,interlayers,epochNumber)
+            case "RNN":
+                pass
+            case "Karar Ağaçları":
+                pass
+            case "KNN":
+                pass
     return 401
