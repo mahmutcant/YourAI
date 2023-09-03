@@ -97,11 +97,11 @@ def train():
         newDataset.append(new_row)
     df = pd.DataFrame(newDataset)
     clean_df = df.dropna(axis=1, how='all', inplace=False)
-    print(clean_df)
     if user:
         match algorithm:
             case "Perceptron":
-                return {"accuracy": neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber)}
+                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber)
+                return {"accuracy": accuracy}
             case "RNN":
                 pass
             case "Karar Ağaçları":
