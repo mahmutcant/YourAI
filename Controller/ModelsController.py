@@ -32,8 +32,8 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber):
     model.add(Dense(16, input_dim=count_col, activation="relu"))
     model.add(Dropout(0.6))
     for i in range(len(interlayers)):
-        model.add(Dense(32, activation="relu"))
-    model.add(Dropout(0.6))
+        model.add(Dense(interlayers[str(i)]["neuronNumber"], activation="relu"))
+        model.add(Dropout(interlayers[str(i)]["dropoutNumber"]))
     model.add(Dense(class_len, activation="softmax"))
     model.summary()
     model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
@@ -92,14 +92,16 @@ def train():
                 try:
                     new_value = float(value)
                 except:
-                    new_value = value
+                    new_value = None
             new_row.append(new_value)
         newDataset.append(new_row)
     df = pd.DataFrame(newDataset)
+    clean_df = df.dropna(axis=1, how='all', inplace=False)
+    print(clean_df)
     if user:
         match algorithm:
             case "Perceptron":
-                neuralNetwork(df,selectedClassIndex,interlayers,epochNumber)
+                return {"accuracy": neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber)}
             case "RNN":
                 pass
             case "Karar Ağaçları":
