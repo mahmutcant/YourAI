@@ -5,6 +5,7 @@ import os
 from Model.User import User
 from Model.SavedModel import SavedModel
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
@@ -30,13 +31,13 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber):
     model = Sequential()
     model.add(Dense(16, input_dim=count_col, activation="relu"))
     model.add(Dropout(0.6))
-    for i in range(interlayers):
+    for i in range(len(interlayers)):
         model.add(Dense(32, activation="relu"))
     model.add(Dropout(0.6))
     model.add(Dense(class_len, activation="softmax"))
     model.summary()
     model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-    model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=epochNumber)
+    model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=int(epochNumber))
     return max(model.history.history["accuracy"])
 def knn(dataset, target, k=8):
     X = dataset.drop([target], axis=1)
@@ -75,19 +76,30 @@ def train():
     algorithm = data.get('algorithm')
     selectedClass = data.get('selectedClass')
     interlayers = data.get('interlayers')
+    columns = data.get('columns')
     token = request.headers.get('Authorization').split()[1]
     payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
     user = User.query.get(payload['user_id'])
-    dataset.pop('0',None)
-    parsed_dataset = {
-    key: [float(value) for value in values if is_numeric(value)]
-    for key, values in dataset.items()
-    }
-    filtered_dataset = {key: values for key, values in parsed_dataset.items()}
+    veri = list(dataset.values())
+    selectedClassIndex = columns.index(selectedClass)
+    newDataset = []
+    for row in veri[1:]:
+        new_row = []
+        for i,value in enumerate(row):
+            try:
+                new_value = int(value) if i != selectedClassIndex else value
+            except:
+                try:
+                    new_value = float(value)
+                except:
+                    new_value = value
+            new_row.append(new_value)
+        newDataset.append(new_row)
+    df = pd.DataFrame(newDataset)
     if user:
         match algorithm:
             case "Perceptron":
-                neuralNetwork(filtered_dataset,selectedClass,interlayers,epochNumber)
+                neuralNetwork(df,selectedClassIndex,interlayers,epochNumber)
             case "RNN":
                 pass
             case "Karar Ağaçları":
