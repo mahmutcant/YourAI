@@ -8,3 +8,4 @@ class SavedModel(db.Model):
     path = db.Column(db.String)
     userId = db.Column(db.Integer, db.ForeignKey("users.id"))
     user = db.relationship("User", backref=db.backref('models', lazy=True))
+    csvData = db.Column(db.JSON)

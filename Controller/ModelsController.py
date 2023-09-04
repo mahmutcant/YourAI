@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import jsonify, request, redirect,render_template
 import jwt
 from app import app, db
@@ -8,6 +9,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
@@ -17,7 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 
-def neuralNetwork(dataset, selectedClass, interlayers, epochNumber):
+def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,columns,username):
     label_encoder = LabelEncoder().fit(dataset[selectedClass])
     labels = label_encoder.transform(dataset[selectedClass])
     classes = list(label_encoder.classes_)
@@ -38,6 +40,15 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber):
     model.summary()
     model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
     model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=int(epochNumber))
+    current_directory = os.getcwd()
+    users_folder_path = os.path.join(current_directory, 'Users')
+    usernameDirectory = os.path.join(users_folder_path, username)
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    model_filename = f"{userId}-{current_date}"
+    model.save_weights(usernameDirectory + f"/{username}" + model_filename + ".h5")
+    newModel = SavedModel(modelName=model_filename,path=usernameDirectory,userId=userId,csvData=columns)
+    db.session.add(newModel)
+    db.session.commit()
     return max(model.history.history["accuracy"])
 def knn(dataset, target, k=8):
     X = dataset.drop([target], axis=1)
@@ -100,7 +111,7 @@ def train():
     if user:
         match algorithm:
             case "Perceptron":
-                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber)
+                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber,payload['user_id'],columns,user.username)
                 return {"accuracy": accuracy}
             case "RNN":
                 pass
