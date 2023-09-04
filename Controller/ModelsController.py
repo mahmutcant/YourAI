@@ -45,8 +45,8 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,colum
     usernameDirectory = os.path.join(users_folder_path, username)
     current_date = datetime.now().strftime("%Y-%m-%d")
     model_filename = f"{userId}-{current_date}"
-    model.save_weights(usernameDirectory + f"/{username}" + model_filename + ".h5")
-    newModel = SavedModel(modelName=model_filename,path=usernameDirectory,userId=userId,csvData=columns)
+    model.save_weights(usernameDirectory + f"\{username}" + model_filename + ".h5")
+    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns)
     db.session.add(newModel)
     db.session.commit()
     return max(model.history.history["accuracy"])
