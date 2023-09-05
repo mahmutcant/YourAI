@@ -121,3 +121,18 @@ def train():
             case "KNN":
                 pass
     return 401
+@app.route('/getmymodels', methods=['GET'])
+def getMyModels():
+    token = request.headers.get('Authorization').split()[1]
+    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    userId = payload["user_id"]
+    models = SavedModel.query.filter_by(userId=userId).all()
+    model_data = []
+
+    for model in models:
+        model_info = {
+            'id': model.id,
+            'modelSpecialName': model.modelSpecialName,
+        }
+        model_data.append(model_info)
+    return jsonify({"modeller": model_data})
