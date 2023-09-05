@@ -11,3 +11,4 @@ class SavedModel(db.Model):
     csvData = db.Column(db.JSON)
     modelSpecialName = db.Column(db.String)
     accuracyValue = db.Column(db.Float)
+    selectedLabel = db.Column(db.String)
