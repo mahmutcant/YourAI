@@ -9,3 +9,4 @@ class SavedModel(db.Model):
     userId = db.Column(db.Integer, db.ForeignKey("users.id"))
     user = db.relationship("User", backref=db.backref('models', lazy=True))
     csvData = db.Column(db.JSON)
+    modelSpecialName = db.Column(db.String)

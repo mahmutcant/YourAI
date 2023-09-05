@@ -19,7 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 
-def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,columns,username):
+def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,columns,username,modelSpecialName):
     label_encoder = LabelEncoder().fit(dataset[selectedClass])
     labels = label_encoder.transform(dataset[selectedClass])
     classes = list(label_encoder.classes_)
@@ -46,7 +46,7 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,colum
     current_date = datetime.now().strftime("%Y-%m-%d")
     model_filename = f"{userId}-{current_date}"
     model.save_weights(usernameDirectory + f"\{username}" + model_filename + ".h5")
-    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns)
+    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns,modelSpecialName=modelSpecialName)
     db.session.add(newModel)
     db.session.commit()
     return max(model.history.history["accuracy"])
@@ -88,6 +88,7 @@ def train():
     selectedClass = data.get('selectedClass')
     interlayers = data.get('interlayers')
     columns = data.get('columns')
+    modelSpecialName = data.get('modelName')
     token = request.headers.get('Authorization').split()[1]
     payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
     user = User.query.get(payload['user_id'])
@@ -111,7 +112,7 @@ def train():
     if user:
         match algorithm:
             case "Perceptron":
-                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber,payload['user_id'],columns,user.username)
+                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber,payload['user_id'],columns,user.username,modelSpecialName)
                 return {"accuracy": accuracy}
             case "RNN":
                 pass
