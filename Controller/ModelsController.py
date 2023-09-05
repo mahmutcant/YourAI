@@ -44,9 +44,9 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,colum
     users_folder_path = os.path.join(current_directory, 'Users')
     usernameDirectory = os.path.join(users_folder_path, username)
     current_date = datetime.now().strftime("%Y-%m-%d")
-    model_filename = f"{userId}-{current_date}"
+    model_filename = f"{userId}-{modelSpecialName}-{current_date}"
     model.save_weights(usernameDirectory + f"\{username}" + model_filename + ".h5")
-    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns,modelSpecialName=modelSpecialName)
+    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns,modelSpecialName=modelSpecialName,accuracyValue=max(model.history.history["accuracy"]))
     db.session.add(newModel)
     db.session.commit()
     return max(model.history.history["accuracy"])
@@ -133,6 +133,9 @@ def getMyModels():
         model_info = {
             'id': model.id,
             'modelSpecialName': model.modelSpecialName,
+            'path': model.path,
+            'csvData' : model.csvData,
+            'accuracyValue': model.accuracyValue
         }
         model_data.append(model_info)
-    return jsonify({"modeller": model_data})
+    return jsonify({"data": model_data})

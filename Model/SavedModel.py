@@ -10,3 +10,4 @@ class SavedModel(db.Model):
     user = db.relationship("User", backref=db.backref('models', lazy=True))
     csvData = db.Column(db.JSON)
     modelSpecialName = db.Column(db.String)
+    accuracyValue = db.Column(db.Float)
