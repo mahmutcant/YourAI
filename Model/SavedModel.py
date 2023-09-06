@@ -12,3 +12,5 @@ class SavedModel(db.Model):
     modelSpecialName = db.Column(db.String)
     accuracyValue = db.Column(db.Float)
     selectedLabel = db.Column(db.String)
+    listOfLabels = db.Column(db.JSON)
+    droppedColumns = db.Column(db.JSON)

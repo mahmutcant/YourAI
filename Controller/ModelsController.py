@@ -14,12 +14,14 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
+from tensorflow.keras.models import load_model
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 
-def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,columns,username,modelSpecialName):
+def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,columns,username,modelSpecialName,droppedColumns):
+    dataset = dataset.dropna(axis=0)
     label_encoder = LabelEncoder().fit(dataset[selectedClass])
     labels = label_encoder.transform(dataset[selectedClass])
     classes = list(label_encoder.classes_)
@@ -45,8 +47,8 @@ def neuralNetwork(dataset, selectedClass, interlayers, epochNumber, userId,colum
     usernameDirectory = os.path.join(users_folder_path, username)
     current_date = datetime.now().strftime("%Y-%m-%d")
     model_filename = f"{userId}-{modelSpecialName}-{current_date}"
-    model.save_weights(usernameDirectory + f"\{username}" + model_filename + ".h5")
-    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns,modelSpecialName=modelSpecialName,accuracyValue=max(model.history.history["accuracy"]),selectedLabel=selectedClass)
+    model.save(usernameDirectory + f"\{username}" + model_filename + ".h5")
+    newModel = SavedModel(modelName=username+model_filename,path=usernameDirectory,userId=userId,csvData=columns,modelSpecialName=modelSpecialName,accuracyValue=max(model.history.history["accuracy"]),selectedLabel=selectedClass,listOfLabels=classes,droppedColumns=droppedColumns)
     db.session.add(newModel)
     db.session.commit()
     return max(model.history.history["accuracy"])
@@ -73,9 +75,9 @@ def get_models():
     models = SavedModel.query.all()
     return jsonify(models=[model.serialize() for model in models])
 
-def is_numeric(value):
+def is_convertible_to_number(input_str):
     try:
-        float(value)
+        float(input_str)
         return True
     except ValueError:
         return False
@@ -94,17 +96,20 @@ def train():
     user = User.query.get(payload['user_id'])
     veri = list(dataset.values())
     selectedClassIndex = columns.index(selectedClass)
+    droppedColumns = []
     newDataset = []
     for row in veri[1:]:
         new_row = []
         for i,value in enumerate(row):
-            try:
-                new_value = int(value) if i != selectedClassIndex else value
-            except:
-                try:
-                    new_value = float(value)
-                except:
-                    new_value = None
+            if(is_convertible_to_number(value)):
+                new_value = float(value)
+            else:
+                if(i != selectedClassIndex):
+                    if value != "" and value != "0.0" and value != "1.0" and value != "0" and value != "1" and value != 0.0 and value != 1.0 and value != 0 and value != 1:
+                        droppedColumns.append(i)
+                    else:
+                        if value != "":
+                            new_value = float(value)
             new_row.append(new_value)
         newDataset.append(new_row)
     df = pd.DataFrame(newDataset)
@@ -112,7 +117,7 @@ def train():
     if user:
         match algorithm:
             case "Perceptron":
-                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber,payload['user_id'],columns,user.username,modelSpecialName)
+                accuracy = neuralNetwork(clean_df,selectedClassIndex,interlayers,epochNumber,payload['user_id'],columns,user.username,modelSpecialName,list(set(droppedColumns)))
                 return {"accuracy": accuracy}
             case "RNN":
                 pass
@@ -135,7 +140,34 @@ def getMyModels():
             'modelSpecialName': model.modelSpecialName,
             'path': model.path,
             'csvData' : model.csvData,
-            'accuracyValue': model.accuracyValue
+            'accuracyValue': model.accuracyValue,
+            "selectedLabel" : model.selectedLabel,
+            "modelName" : model.modelName,
+            "droppedColumns" : model.droppedColumns,
+            "listOfLabels" : model.listOfLabels
         }
         model_data.append(model_info)
     return jsonify({"data": model_data})
+
+@app.route('/predictModel', methods=['POST'])
+def predictModel():
+    data = request.get_json()
+    selectedModel = data.get('selectedModel')
+    inputData = data.get('inputData')
+    token = request.headers.get('Authorization').split()[1]
+    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user = User.query.get(payload['user_id'])
+    if user:
+        input_data = np.array([inputData], dtype=np.float32)
+        current_directory = os.getcwd()
+        users_folder_path = os.path.join(current_directory, 'Users')
+        usernameDirectory = os.path.join(users_folder_path, user.username)
+        model = load_model(f"{usernameDirectory}\{selectedModel}.h5")
+        prediction = model.predict(input_data)
+        max_index = np.argmax(prediction)
+        int64_number = np.int64(max_index)
+        int_number = int(int64_number)
+        print(int_number)
+        return jsonify({"message":int_number})
+    else:
+        return 401
